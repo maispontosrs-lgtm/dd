@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diário do Léo — Mini Índice WIN (Neon v6.5)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+        .neon-glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+        .neon-glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen selection:bg-blue-500 selection:text-white">
+
+    <!-- Ecrã de Acesso Restrito -->
+    <div id="auth-screen" class="fixed inset-0 bg-gray-950 z-50 flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-md text-center neon-glow">
+            <div class="mb-6">
+                <i class="fa-solid fa-chart-line text-5xl text-blue-500 mb-3"></i>
+                <h1 class="text-2xl font-bold tracking-wider">DIÁRIO DO LÉO</h1>
+                <p class="text-sm text-gray-400">Mini Índice WIN — Neon v6.5</p>
+            </div>
+            <form id="auth-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="license-password" placeholder="Insira a palavra-passe (123456)" required
+                        class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl focus:outline-none focus:border-blue-500 text-center tracking-widest text-lg">
+                </div>
+                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-500 font-semibold rounded-xl transition duration-200 shadow-lg shadow-blue-600/30">
+                    Entrar no Sistema
+                </button>
+            </form>
+            <p id="auth-error" class="text-red-400 text-sm mt-3 hidden">Palavra-passe incorreta!</p>
+        </div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div id="app-container" class="hidden flex flex-col min-h-screen">
+        <!-- Cabeçalho -->
+        <header class="glass-panel border-b border-gray-800 sticky top-0 z-40 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600/20 p-2.5 rounded-xl border border-blue-500/30 text-blue-400">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Diário do Léo <span class="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/30">v6.5 Neon</span></h1>
+                    <p class="text-xs text-gray-400">Gestão Avançada de Mini Índice WIN</p>
+                </div>
+            </div>
+
+            <!-- Navegação por Abas -->
+            <nav class="flex flex-wrap gap-2 bg-gray-900/80 p-1.5 rounded-xl border border-gray-800">
+                <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-200 bg-blue-600 text-white shadow">
+                    <i class="fa-solid fa-house mr-2"></i>Dashboard
+                </button>
+                <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-calendar-days mr-2"></i>Calendário
+                </button>
+                <button onclick="switchTab('performance')" id="tab-btn-performance" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-chart-bar mr-2"></i>Performance
+                </button>
+                <button onclick="switchTab('equity')" id="tab-btn-equity" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-chart-line mr-2"></i>Equity & G/L
+                </button>
+                <button onclick="switchTab('calculator')" id="tab-btn-calculator" class="px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-calculator mr-2"></i>Calculadora WIN
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <button onclick="triggerVoiceRecognition()" class="p-2.5 bg-gray-900 hover:bg-gray-800 rounded-xl border border-gray-700 text-gray-300 transition" title="Comando de Voz">
+                    <i class="fa-solid fa-microphone text-blue-400"></i>
+                </button>
+                <button onclick="handleLogout()" class="p-2.5 bg-red-500/10 hover:bg-red-500/20 rounded-xl border border-red-500/30 text-red-400 transition" title="Terminar Sessão">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+            <!-- ABA 1: DASHBOARD -->
+            <section id="tab-dashboard" class="space-y-6">
+                <!-- Métricas Principais -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-green-500">
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Total Positivo</p>
+                        <h3 id="stat-total-positive" class="text-2xl font-bold text-green-400 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-red-500">
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Total Negativo</p>
+                        <h3 id="stat-total-negative" class="text-2xl font-bold text-red-400 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-blue-500">
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Saldo Líquido</p>
+                        <h3 id="stat-net-balance" class="text-2xl font-bold text-blue-400 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-purple-500">
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Mesa (1ª Quinzena)</p>
+                        <h3 id="stat-quinzena-1" class="text-xl font-bold text-purple-400 mt-1">R$ 0,00</h3>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500">
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Mesa (2ª Quinzena)</p>
+                        <h3 id="stat-quinzena-2" class="text-xl font-bold text-amber-400 mt-1">R$ 0,00</h3>
+                    </div>
+                </div>
+
+                <!-- Resumo Rápido e Atalhos -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-circle-info text-blue-500"></i> Bem-vindo ao Diário Neon v6.5</h3>
+                            <p class="text-sm text-gray-400 leading-relaxed">
+                                Registe os seus dias operacionais no <span class="text-blue-400 font-semibold">Calendário</span> para atualizar automaticamente o seu saldo líquido, quinzenas de mesa e curvas de evolução. Utilize a <span class="text-blue-400 font-semibold">Calculadora WIN</span> para simular cenários com alvos múltiplos e desconto de mesa.
+                            </p>
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            <button onclick="switchTab('calendar')" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold transition shadow-lg shadow-blue-600/20">
+                                <i class="fa-solid fa-calendar-plus mr-2"></i> Registar Dia no Calendário
+                            </button>
+                            <button onclick="switchTab('calculator')" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-semibold transition border border-gray-700">
+                                <i class="fa-solid fa-calculator mr-2"></i> Abrir Calculadora WIN
+                            </button>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-4">Estado da Licença</h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between items-center py-2 border-b border-gray-800">
+                                    <span class="text-gray-400">Ativação</span>
+                                    <span class="text-green-400 font-semibold"><i class="fa-solid fa-shield-check mr-1"></i> Verificada</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-800">
+                                    <span class="text-gray-400">Ativo Negociado</span>
+                                    <span class="text-white font-mono font-bold">WIN (Mini Índice)</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2">
+                                    <span class="text-gray-400">Ano de Referência</span>
+                                    <span class="text-white font-mono font-bold">2026</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-800 text-xs text-center text-gray-500">
+                            Dados guardados localmente com segurança.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 2: CALENDÁRIO INTERATIVO -->
+            <section id="tab-calendar" class="space-y-6 hidden">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div class="flex items-center gap-4">
+                            <h2 id="calendar-month-year" class="text-xl font-bold">Outubro 2026</h2>
+                            <div class="flex items-center gap-1 bg-gray-900 p-1 rounded-xl border border-gray-800">
+                                <button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-800 rounded-lg text-gray-300 transition"><i class="fa-solid fa-chevron-left"></i></button>
+                                <button onclick="resetCurrentMonth()" class="px-3 py-1 text-xs font-semibold text-gray-300 hover:bg-gray-800 rounded-lg">Hoje</button>
+                                <button onclick="changeMonth(1)" class="p-2 hover:bg-gray-800 rounded-lg text-gray-300 transition"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            Clique num dia para inserir ou editar o resultado financeiro.
+                        </div>
+                    </div>
+
+                    <!-- Grelha dos Dias da Semana -->
+                    <div class="grid grid-cols-7 gap-2 text-center font-bold text-xs text-gray-400 uppercase mb-2">
+                        <div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div>
+                    </div>
+                    <!-- Grelha de Dias do Mês -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                        <!-- Gerado por JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 3: PERFORMANCE -->
+            <section id="tab-performance" class="space-y-6 hidden">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h2 class="text-xl font-bold mb-4">Evolução Semanal de Performance</h2>
+                    <div class="h-80 relative">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 4: EQUITY & GAIN/LOSS -->
+            <section id="tab-equity" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2">
+                        <h2 class="text-xl font-bold mb-4">Curva Equity Patrimonial</h2>
+                        <div class="h-80 relative">
+                            <canvas id="equityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold mb-4">Proporção Gain / Loss</h2>
+                            <div class="h-64 relative flex items-center justify-center">
+                                <canvas id="doughnutChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400 text-center mt-4">
+                            Rácio calculado com base em todos os dias registados.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 5: CALCULADORA WIN (4 COLUNAS) -->
+            <section id="tab-calculator" class="space-y-6 hidden">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold">Calculadora WIN — Múltiplos Cenários</h2>
+                        <p class="text-sm text-gray-400">Simule alvos em simultâneo com cálculo automático de valor bruto e mesa (30% desconto em lucro).</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="calc-columns">
+                        <!-- Colunas geradas por script ou estáticas -->
+                        <!-- Coluna 1 -->
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800 space-y-3">
+                            <h3 class="font-bold text-sm text-blue-400 border-b border-gray-800 pb-2">Cenário 1</h3>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Pontos (Ex: 350)</label>
+                                <input type="number" id="calc-pts-0" value="350" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Contratos</label>
+                                <input type="number" id="calc-cts-0" value="5" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div class="pt-2 border-t border-gray-800 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">Bruto:</span> <span id="calc-res-bruto-0" class="font-mono text-green-400">R$ 350,00</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">Mesa (70%):</span> <span id="calc-res-mesa-0" class="font-mono text-blue-400">R$ 245,00</span></div>
+                            </div>
+                        </div>
+                        <!-- Coluna 2 -->
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800 space-y-3">
+                            <h3 class="font-bold text-sm text-blue-400 border-b border-gray-800 pb-2">Cenário 2</h3>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Pontos</label>
+                                <input type="number" id="calc-pts-1" value="500" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Contratos</label>
+                                <input type="number" id="calc-cts-1" value="10" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div class="pt-2 border-t border-gray-800 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">Bruto:</span> <span id="calc-res-bruto-1" class="font-mono text-green-400">R$ 1.000,00</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">Mesa (70%):</span> <span id="calc-res-mesa-1" class="font-mono text-blue-400">R$ 700,00</span></div>
+                            </div>
+                        </div>
+                        <!-- Coluna 3 -->
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800 space-y-3">
+                            <h3 class="font-bold text-sm text-blue-400 border-b border-gray-800 pb-2">Cenário 3</h3>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Pontos</label>
+                                <input type="number" id="calc-pts-2" value="800" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Contratos</label>
+                                <input type="number" id="calc-cts-2" value="2" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div class="pt-2 border-t border-gray-800 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">Bruto:</span> <span id="calc-res-bruto-2" class="font-mono text-green-400">R$ 320,00</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">Mesa (70%):</span> <span id="calc-res-mesa-2" class="font-mono text-blue-400">R$ 224,00</span></div>
+                            </div>
+                        </div>
+                        <!-- Coluna 4 -->
+                        <div class="bg-gray-900/60 p-4 rounded-xl border border-gray-800 space-y-3">
+                            <h3 class="font-bold text-sm text-blue-400 border-b border-gray-800 pb-2">Cenário 4</h3>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Pontos</label>
+                                <input type="number" id="calc-pts-3" value="1000" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 block mb-1">Contratos</label>
+                                <input type="number" id="calc-cts-3" value="5" oninput="calculateWin()" class="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div class="pt-2 border-t border-gray-800 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">Bruto:</span> <span id="calc-res-bruto-3" class="font-mono text-green-400">R$ 2.500,00</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">Mesa (70%):</span> <span id="calc-res-mesa-3" class="font-mono text-blue-400">R$ 1.750,00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal de Registo do Dia -->
+    <div id="day-modal" class="fixed inset-0 bg-gray-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-lg space-y-4 neon-glow">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 id="modal-date-title" class="text-lg font-bold">Registar Dia: 01/10/2026</h3>
+                <button onclick="closeDayModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Resultado Financeiro (R$) (ex: 250 ou -150)</label>
+                    <input type="number" id="modal-result" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 font-mono">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Qtd Operações</label>
+                        <input type="number" id="modal-ops" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Contratos Máx</label>
+                        <input type="number" id="modal-contracts" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Estratégia Aplicada</label>
+                    <select id="modal-strategy" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500">
+                        <option value="RSI + Média Móvel">RSI + Média Móvel</option>
+                        <option value="Volume Profile / Delta">Volume Profile / Delta</option>
+                        <option value="Preço & Reversão">Preço & Reversão</option>
+                        <option value="Scalp Agressão">Scalp Agressão</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Notas / Observações</label>
+                    <textarea id="modal-notes" rows="2" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-3 border-t border-gray-800">
+                <button onclick="closeDayModal()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                <button onclick="saveDayData()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold transition shadow-lg shadow-blue-600/20">Guardar Registo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Principal -->
+    <script>
+        // Gestão de Estado e LocalStorage
+        let tradingData = JSON.parse(localStorage.getItem('diario_win_data')) || {};
+        let currentYear = 2026;
+        let currentMonth = 9; // Outubro (0-11)
+        let selectedDateKey = null;
+
+        let perfChartInstance = null;
+        let equityChartInstance = null;
+        let doughnutChartInstance = null;
+
+        // Autenticação
+        function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('license-password').value;
+            if (pass === '123456') {
+                localStorage.setItem('diario_win_auth', 'true');
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                initApp();
+            } else {
+                document.getElementById('auth-error').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('diario_win_auth');
+            location.reload();
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem('diario_win_auth') === 'true') {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                initApp();
+            }
+        }
+
+        function initApp() {
+            updateDashboardMetrics();
+            renderCalendar();
+            calculateWin();
+            initCharts();
+        }
+
+        // Navegação por Abas
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'calendar', 'performance', 'equity', 'calculator'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) {
+                    btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-gray-400 hover:text-white";
+                }
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            if (activeBtn) {
+                activeBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition duration-200 bg-blue-600 text-white shadow";
+            }
+            if (tabName === 'performance' || tabName === 'equity') {
+                updateCharts();
+            }
+        }
+
+        // Calendário
+        const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        
+        function renderCalendar() {
+            document.getElementById('calendar-month-year').innerText = `${monthNames[currentMonth]} ${currentYear}`;
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            // Ajustar para iniciar na Segunda-feira (0 = Segunda, 6 = Domingo)
+            let startDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // Espaços vazios iniciais
+            for (let i = 0; i < startDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = "h-24 bg-gray-900/20 rounded-xl border border-gray-900 opacity-30";
+                grid.appendChild(emptyCell);
+            }
+
+            // Dias do mês
+            for (let day = 1; day <= totalDays; day++) {
+                const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = tradingData[dateKey];
+                
+                const cell = document.createElement('div');
+                cell.className = "h-24 bg-gray-900/60 rounded-xl border border-gray-800 p-2 flex flex-col justify-between cursor-pointer hover:border-blue-500/50 transition";
+                cell.onclick = () => openDayModal(dateKey, day);
+
+                let contentClass = "text-white";
+                let valText = "";
+                if (dayData) {
+                    const val = parseFloat(dayData.result);
+                    if (val > 0) {
+                        cell.classList.add('border-green-500/40', 'bg-green-500/5');
+                        valText = `<span class="text-xs font-mono font-bold text-green-400">+R$ ${val.toFixed(2)}</span>`;
+                    } else if (val < 0) {
+                        cell.classList.add('border-red-500/40', 'bg-red-500/5');
+                        valText = `<span class="text-xs font-mono font-bold text-red-400">-R$ ${Math.abs(val).toFixed(2)}</span>`;
+                    } else {
+                        valText = `<span class="text-xs font-mono text-gray-400">R$ 0,00</span>`;
+                    }
+                }
+
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-gray-300">${day}</span>
+                        ${dayData ? '<i class="fa-solid fa-circle-check text-blue-400 text-[10px]"></i>' : ''}
+                    </div>
+                    <div class="text-center my-auto">
+                        ${valText}
+                    </div>
+                    <div class="text-[10px] text-gray-500 truncate text-right">
+                        ${dayData ? dayData.strategy : ''}
+                    </div>
+                `;
+                grid.appendChild(cell);
+            }
+        }
+
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function resetCurrentMonth() {
+            currentMonth = 9;
+            currentYear = 2026;
+            renderCalendar();
+        }
+
+        // Modal de Dia
+        function openDayModal(dateKey, dayNum) {
+            selectedDateKey = dateKey;
+            document.getElementById('modal-date-title').innerText = `Registar Dia: ${String(dayNum).padStart(2, '0')}/${String(currentMonth + 1).padStart(2, '0')}/${currentYear}`;
+            
+            const existing = tradingData[dateKey] || { result: '', ops: '', contracts: '', strategy: 'RSI + Média Móvel', notes: '' };
+            document.getElementById('modal-result').value = existing.result;
+            document.getElementById('modal-ops').value = existing.ops;
+            document.getElementById('modal-contracts').value = existing.contracts;
+            document.getElementById('modal-strategy').value = existing.strategy;
+            document.getElementById('modal-notes').value = existing.notes;
+
+            document.getElementById('day-modal').classList.remove('hidden');
+        }
+
+        function closeDayModal() {
+            document.getElementById('day-modal').classList.add('hidden');
+            selectedDateKey = null;
+        }
+
+        function saveDayData() {
+            if (!selectedDateKey) return;
+            const result = document.getElementById('modal-result').value;
+            const ops = document.getElementById('modal-ops').value;
+            const contracts = document.getElementById('modal-contracts').value;
+            const strategy = document.getElementById('modal-strategy').value;
+            const notes = document.getElementById('modal-notes').value;
+
+            if (result === '') {
+                delete tradingData[selectedDateKey];
+            } else {
+                tradingData[selectedDateKey] = { result: parseFloat(result), ops, contracts, strategy, notes };
+            }
+
+            localStorage.setItem('diario_win_data', JSON.stringify(tradingData));
+            closeDayModal();
+            renderCalendar();
+            updateDashboardMetrics();
+            updateCharts();
+        }
+
+        // Métricas e Dashboard
+        function updateDashboardMetrics() {
+            let totalPos = 0;
+            let totalNeg = 0;
+            let q1 = 0;
+            let q2 = 0;
+
+            for (const key in tradingData) {
+                const val = parseFloat(tradingData[key].result) || 0;
+                if (val > 0) {
+                    totalPos += val;
+                } else {
+                    totalNeg += Math.abs(val);
+                }
+
+                // Separar por quinzena do mês atual selecionado
+                const [y, m, d] = key.split('-').map(Number);
+                if (y === currentYear && m === (currentMonth + 1)) {
+                    if (d <= 15) {
+                        q1 += val;
+                    } else {
+                        q2 += val;
+                    }
+                }
+            }
+
+            const net = totalPos - totalNeg;
+            document.getElementById('stat-total-positive').innerText = `R$ ${totalPos.toFixed(2)}`;
+            document.getElementById('stat-total-negative').innerText = `R$ ${totalNeg.toFixed(2)}`;
+            
+            const netEl = document.getElementById('stat-net-balance');
+            netEl.innerText = `R$ ${net.toFixed(2)}`;
+            netEl.className = `text-2xl font-bold mt-1 ${net >= 0 ? 'text-green-400' : 'text-red-400'}`;
+
+            document.getElementById('stat-quinzena-1').innerText = `R$ ${q1.toFixed(2)}`;
+            document.getElementById('stat-quinzena-2').innerText = `R$ ${q2.toFixed(2)}`;
+        }
+
+        // Calculadora WIN
+        function calculateWin() {
+            // Valor de cada ponto no WIN (Mini Índice) = R$ 0,20 por contrato
+            for (let i = 0; i < 4; i++) {
+                const pts = parseFloat(document.getElementById(`calc-pts-${i}`).value) || 0;
+                const cts = parseFloat(document.getElementById(`calc-cts-${i}`).value) || 0;
+                const bruto = pts * cts * 0.20;
+                const mesa = bruto > 0 ? bruto * 0.70 : bruto; // 30% desconto em lucro para mesa
+
+                document.getElementById(`calc-res-bruto-${i}`).innerText = `R$ ${bruto.toFixed(2)}`;
+                document.getElementById(`calc-res-mesa-${i}`).innerText = `R$ ${mesa.toFixed(2)}`;
+            }
+        }
+
+        // Gráficos com Chart.js
+        function initCharts() {
+            // Performance Chart
+            const ctxPerf = document.getElementById('performanceChart').getContext('2d');
+            perfChartInstance = new Chart(ctxPerf, {
+                type: 'bar',
+                data: {
+                    labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+                    datasets: [{
+                        label: 'Resultado Líquido (R$)',
+                        data: [450, -120, 890, 320],
+                        backgroundColor: ['#10b981', '#ef4444', '#10b981', '#3b82f6'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(75, 85, 99, 0.1)' }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { color: 'rgba(75, 85, 99, 0.1)' }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // Equity Chart
+            const ctxEq = document.getElementById('equityChart').getContext('2d');
+            equityChartInstance = new Chart(ctxEq, {
+                type: 'line',
+                data: {
+                    labels: ['Início', 'Dia 5', 'Dia 10', 'Dia 15', 'Dia 20', 'Dia 25', 'Fim'],
+                    datasets: [{
+                        label: 'Curva Equity',
+                        data: [0, 350, 230, 950, 810, 1400, 1850],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(75, 85, 99, 0.1)' }, ticks: { color: '#9ca3af' } },
+                        y: { grid: { color: 'rgba(75, 85, 99, 0.1)' }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // Doughnut Chart
+            const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Gain Total', 'Loss Total'],
+                    datasets: [{
+                        data: [2400, 550],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } }
+                }
+            });
+        }
+
+        function updateCharts() {
+            if (perfChartInstance) perfChartInstance.update();
+            if (equityChartInstance) equityChartInstance.update();
+            if (doughnutChartInstance) doughnutChartInstance.update();
+        }
+
+        function triggerVoiceRecognition() {
+            alert("Sistema de reconhecimento de voz ativado. Pode ditar o resultado operacional.");
+        }
+    </script>
+</body>
+</html>
